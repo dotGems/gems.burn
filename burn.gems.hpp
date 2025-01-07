@@ -22,7 +22,7 @@ public:
 
         int64_t bytes_to_refund = 0;
         for ( const uint64_t asset_id : asset_ids ) {
-            atomic::nft_extra nft = atomic::get_nft_extra( get_self(), asset_id );
+            auto nft = atomic::get_asset( get_self(), asset_id );
             check_eligible( nft.collection_name, nft.template_id );
             bytes_to_refund += REFUND_BYTES;
             burnasset.send( get_self(), asset_id );
