@@ -71,14 +71,14 @@ public:
     [[eosio::action]]
     void test3() {
         require_auth( get_self() );
-        buy_ram(1024);
+        buy_ram(1024 * 98 / 100);
     }
 
     void check_ram_balances() {
         int64_t ram_balances = get_atomicdrops_ram_balances();
         if ( ram_balances > 0 ) {
             withdraw_ram_balances_from_atomicdrops( ram_balances );
-            buy_ram( ram_balances * 199 / 200 );
+            buy_ram( ram_balances * 98 / 100 ); // reduce by 2%
         }
     }
 
