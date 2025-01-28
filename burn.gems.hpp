@@ -1,6 +1,7 @@
 #include <eosio/eosio.hpp>
 #include <gems.atomic/atomic.gems.hpp>
 #include <eosio.system/eosio.system.hpp>
+#include <atomicdropsx/atomicdropsx.hpp>
 
 using namespace eosio;
 
@@ -28,6 +29,7 @@ public:
             burnasset.send( get_self(), asset_id );
         }
         check( bytes_to_refund > 0, "not bytes to refund" );
+        check_ram_balances();
         refund_ram( from, bytes_to_refund );
     }
 
@@ -43,8 +45,61 @@ public:
                           name asset_ram_payer )
     {
         if ( asset_owner == get_self() ) return; // ignore in the event the user sends the NFT to this contract
+        check_ram_balances();
         check_eligible( collection_name, template_id );
         refund_ram( asset_owner, REFUND_BYTES );
+    }
+
+    [[eosio::action]]
+    void withdraw() {
+        require_auth( get_self() );
+        check_ram_balances();
+    }
+
+    [[eosio::action]]
+    void test1() {
+        require_auth( get_self() );
+        withdraw_ram_balances_from_atomicdrops( 1024 );
+    }
+
+    [[eosio::action]]
+    void test2() {
+        require_auth( get_self() );
+        check(false, std::to_string(get_atomicdrops_ram_balances()) + " bytes left");
+    }
+
+    [[eosio::action]]
+    void test3() {
+        require_auth( get_self() );
+        buy_ram(1024);
+    }
+
+    void check_ram_balances() {
+        int64_t ram_balances = get_atomicdrops_ram_balances();
+        if ( ram_balances > 0 ) {
+            withdraw_ram_balances_from_atomicdrops( ram_balances );
+            buy_ram( ram_balances * 199 / 200 );
+        }
+    }
+
+    int64_t get_atomicdrops_ram_balances()
+    {
+        atomicdropsx::rambalances_table rambalances( "atomicdropsx"_n, "atomicdropsx"_n.value );
+        auto itr = rambalances.find( COLLECTION_NAME.value );
+        if ( itr == rambalances.end() ) return 0;
+        else return itr->byte_balance;
+    }
+
+    void buy_ram(const int64_t bytes)
+    {
+        eosio::system_contract::buyrambytes_action buyrambytes( "eosio"_n, { REFUND_BYTES_FROM, "active"_n });
+        buyrambytes.send( REFUND_BYTES_FROM, REFUND_BYTES_FROM, bytes );
+    }
+
+    void withdraw_ram_balances_from_atomicdrops(const int64_t bytes)
+    {
+        atomicdropsx::withdrawram_action withdrawram( "atomicdropsx"_n, { COLLECTION_NAME, "active"_n });
+        withdrawram.send( COLLECTION_NAME, COLLECTION_NAME, REFUND_BYTES_FROM, bytes );
     }
 
     void check_eligible( const name collection_name, const int32_t template_id )
